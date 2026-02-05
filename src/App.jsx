@@ -11,7 +11,7 @@ function App() {
   const [lang, setLang] = useState('es');
   const [view, setView] = useState('HOME'); // HOME, SOLO, GROUP
   const [dailyCount, setDailyCount] = useState(0);
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(true); // Default to PRO unlocked
   const [showProModal, setShowProModal] = useState(false);
   const [avatarType, setAvatarType] = useState('man');
 
@@ -39,7 +39,7 @@ function App() {
 
   const checkLimit = () => {
     if (isPro) return true;
-    if (dailyCount >= 15) {
+    if (dailyCount >= 2000) { // Limit increased to 2000
       setShowProModal(true);
       return false;
     }
@@ -66,7 +66,7 @@ function App() {
 
   return (
     <>
-      <audio ref={audioRef} loop src="/music.mp3" />
+      <audio ref={audioRef} loop src="/puzzle_fun_extra_paused.wav" />
 
       <div className="shapes-container">
         {/* Background characters cleared */}
@@ -86,7 +86,7 @@ function App() {
               onClick={() => setIsPro(!isPro)}
               style={{ cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold', fontFamily: 'Comic Neue', color: isPro ? '#ff0055' : 'black', display: 'flex', alignItems: 'center' }}
             >
-              {isPro ? '👑 PRO' : `⚡ FREE: ${dailyCount}/15`}
+              {isPro ? '👑 PRO' : `⚡ FREE: ${dailyCount}/2000`}
             </div>
           </div>
         </header>
