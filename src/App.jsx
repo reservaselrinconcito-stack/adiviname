@@ -75,7 +75,7 @@ function App() {
       <div className="container">
         {/* Header / Stats */}
         <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 1rem' }}>
-          <div style={{ fontWeight: '900', letterSpacing: '1px', fontFamily: 'Bangers, cursive', fontSize: '1.5rem', color: 'black' }}>ADIVINAME</div>
+          <div className="header-title" style={{ fontWeight: '900', letterSpacing: '1px', fontFamily: 'Bangers, cursive', fontSize: '1.5rem', color: 'black' }}>ADIVINAME</div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={toggleMusic} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem' }}>
@@ -113,7 +113,7 @@ function App() {
             {/* Avatar Selection */}
             <div style={{ background: '#f0f0f0', padding: '1rem', borderRadius: '4px', border: '2px solid black', marginBottom: '2rem' }}>
               <p style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'Bangers', letterSpacing: '1px' }}>ELIGE TU PERSONAJE:</p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+              <div className="avatar-selection-grid" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 {[
                   { id: 'man', icon: avatarMan },
                   { id: 'woman', icon: avatarWoman },
@@ -122,6 +122,7 @@ function App() {
                 ].map(av => (
                   <button
                     key={av.id}
+                    className="avatar-btn"
                     onClick={() => setAvatarType(av.id)}
                     style={{
                       padding: 0,
