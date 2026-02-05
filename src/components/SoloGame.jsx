@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { challenges } from '../data'
 import Avatar from './Avatar'
 
-// Backgrounds (using existing Ghibli ones as placeholders for now)
+// Backgrounds
 import bgForest from '../assets/ghibli/bg_forest_1770314298231.png';
 import bgSky from '../assets/ghibli/bg_sky_1770314324055.png';
 import bgVillage from '../assets/ghibli/bg_village_1770314337439.png';
@@ -20,12 +20,11 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
     const [status, setStatus] = useState('PLAYING'); // PLAYING, WIN, LOSE, PAUSED
     const [shake, setShake] = useState(false);
     const [showHint, setShowHint] = useState(false);
-    const [combo, setCombo] = useState(0); // Viral mechanic: streaks
+    const [combo, setCombo] = useState(0);
     const [score, setScore] = useState(0);
 
     const timerRef = useRef(null);
 
-    // Initial Load
     useEffect(() => {
         loadQuestion();
     }, []);
@@ -36,18 +35,17 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
             return;
         }
 
-        // 1. Filter by Language
-        const langPool = challenges.filter(c => c.lang === lang);
-        if (langPool.length === 0) return;
+        // Just pick random from all for now (Language filter removed as new data is mixed/ES mostly)
+        // In a real app we'd filter by lang property if scaling
+        const pool = challenges;
 
-        // 2. Pick Random Challenge (Viral mix)
         let nextIdx;
         let nextChallenge;
         let attempts = 0;
 
         do {
-            nextIdx = Math.floor(Math.random() * langPool.length);
-            nextChallenge = langPool[nextIdx];
+            nextIdx = Math.floor(Math.random() * pool.length);
+            nextChallenge = pool[nextIdx];
             attempts++;
         } while (currentChallenge && nextChallenge.id === currentChallenge.id && attempts < 5);
 
@@ -56,7 +54,7 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
         // Reset State
         setInput('');
         setStatus('PLAYING');
-        setTimeLeft(20); // Fast pacing!
+        setTimeLeft(currentChallenge?.time_limit || 20);
         setShowHint(false);
         setShake(false);
     };
@@ -80,71 +78,63 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
     const handleLose = () => {
         setStatus('LOSE');
-        setCombo(0); // Reset combo
+        setCombo(0);
         clearInterval(timerRef.current);
         incrementCount();
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Angry vibe
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
         setTimeout(() => {
             loadQuestion();
-        }, 3000);
+        }, 3500); // More time to read explanation
     };
 
     const handleWin = () => {
         setStatus('WIN');
-        setCombo(c => c + 1); // Increase combo
+        setCombo(c => c + 1);
         setScore(s => s + 10 * (combo + 1));
         clearInterval(timerRef.current);
         incrementCount();
-        if (navigator.vibrate) navigator.vibrate(50); // Nice tick
-
-        // Viral: Check for "Juicy" moments
-        // TODO: Confetti trigger here
+        if (navigator.vibrate) navigator.vibrate(50);
 
         setTimeout(() => {
             loadQuestion();
         }, 1500);
     };
 
-    // --- LOGIC FOR DIFFERENT TYPES ---
+    // --- LOGIC ---
 
-    // 1. Text Input (Classic Riddle)
+    // Text Input (Riddle)
     const checkTextAnswer = (val) => {
         const clean = (str) => str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        if (clean(val) === clean(currentChallenge.answer)) {
+        const info = currentChallenge.answer.toString(); // Handle numbers as strings
+        if (clean(val) === clean(info)) {
             handleWin();
         }
     };
 
-    // 2. Option Selection (Logic/Math)
-    const checkOption = (idx) => {
+    // Option Selection (Logic/Pattern/Trick)
+    const checkOption = (opt) => {
         if (status !== 'PLAYING') return;
 
-        if (idx === currentChallenge.correctOption) {
+        if (opt === currentChallenge.answer) {
             handleWin();
         } else {
-            // Wrong option clicked
             setShake(true);
             if (navigator.vibrate) navigator.vibrate(200);
             setTimeout(() => setShake(false), 500);
-            // Optional: Penalize time?
             setTimeLeft(t => Math.max(0, t - 5));
         }
     };
 
-    const togglePause = () => {
-        setStatus(prev => prev === 'PLAYING' ? 'PAUSED' : 'PLAYING');
-    };
+    const togglePause = () => setStatus(prev => prev === 'PLAYING' ? 'PAUSED' : 'PLAYING');
 
-    // Render Helpers
     if (!currentChallenge) return null;
 
-    const bgImage = backgrounds[(currentChallenge.id) % backgrounds.length];
+    const bgImage = backgrounds[(currentChallenge.id.length) % backgrounds.length];
     const progressPct = (timeLeft / 20) * 100;
 
     return (
         <>
-            {/* Background Layer */}
             <div
                 style={{
                     position: 'fixed',
@@ -157,26 +147,26 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                 }}
             />
 
-            <div className={`card ${status === 'WIN' ? 'pop-in' : ''} ${shake ? 'shake' : ''}`}>
+            {/* Card Content - Mobile Optimized Padding */}
+            <div className={`card ${status === 'WIN' ? 'pop-in' : ''} ${shake ? 'shake' : ''}`} style={{ padding: '1.5rem 1rem' }}>
 
-                {/* Header: Score & Timer */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
-                    <button className="icon-btn" onClick={onExit} style={{ background: '#FF4757', color: 'white', border: 'none' }}>✕</button>
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                    <button className="icon-btn" onClick={onExit} style={{ background: '#FF4757', color: 'white', border: 'none', width: '35px', height: '35px' }}>✕</button>
 
-                    {/* Combo Counter (Viral Element) */}
                     {combo > 1 && (
-                        <div style={{ background: '#ffa502', padding: '0.2rem 0.8rem', borderRadius: '20px', color: 'white', fontWeight: 'bold', transform: 'rotate(-5deg)' }}>
+                        <div style={{ background: '#ffa502', padding: '0.2rem 0.6rem', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '0.9rem', transform: 'rotate(-5deg)' }}>
                             🔥 {combo}
                         </div>
                     )}
 
-                    <div style={{ fontWeight: '900', fontSize: '1.5rem', fontFamily: 'monospace', color: timeLeft < 5 ? '#ff4757' : '#2f3542' }}>
+                    <div style={{ fontWeight: '900', fontSize: '1.2rem', fontFamily: 'monospace', color: timeLeft < 5 ? '#ff4757' : '#2f3542' }}>
                         {Math.ceil(timeLeft)}s
                     </div>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="progress-bar">
+                <div className="progress-bar" style={{ height: '10px', marginBottom: '1rem' }}>
                     <div className="progress-fill" style={{ width: `${progressPct}%`, background: timeLeft < 5 ? '#ff4757' : '#2ed573' }} />
                 </div>
 
@@ -189,35 +179,47 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                     <>
                         <Avatar state={status} type={avatarType} />
 
-                        {/* Challenge Text */}
-                        <h2 style={{ fontSize: '1.6rem', marginBottom: '1.5rem', minHeight: '60px', color: '#2f3542' }}>
-                            {currentChallenge.text}
+                        {/* Tags Pill */}
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginBottom: '10px' }}>
+                            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', background: '#dfe4ea', padding: '2px 8px', borderRadius: '10px', color: '#747d8c', fontWeight: 'bold' }}>
+                                {currentChallenge.type}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', background: '#ffeaa7', padding: '2px 8px', borderRadius: '10px', color: '#d35400', fontWeight: 'bold' }}>
+                                NVL {currentChallenge.difficulty}
+                            </span>
+                        </div>
+
+                        {/* Question Text - Smaller for mobile */}
+                        <h2 style={{ fontSize: '1.4rem', marginBottom: '1rem', minHeight: '50px', color: '#2f3542', lineHeight: '1.2' }}>
+                            {currentChallenge.question}
                         </h2>
 
                         {/* --- RENDER BASED ON TYPE --- */}
 
-                        {/* TYPE: LOGIC / MATH / TRICK (Buttons) */}
-                        {['LOGIC', 'MATH', 'TRICK'].includes(currentChallenge.type) && currentChallenge.options && (
+                        {currentChallenge.options ? (
                             <div className="options-grid">
                                 {currentChallenge.options.map((opt, idx) => (
                                     <button
                                         key={idx}
                                         className="btn btn-option"
-                                        onClick={() => checkOption(idx)}
-                                        style={{ fontSize: '1.2rem', padding: '0.8rem' }}
+                                        onClick={() => checkOption(opt)}
+                                        style={{ fontSize: '1.1rem', padding: '0.6rem' }}
                                     >
                                         {opt}
                                     </button>
                                 ))}
                             </div>
-                        )}
-
-                        {/* TYPE: RIDDLE (Text Input) */}
-                        {currentChallenge.type === 'RIDDLE' && (
+                        ) : (
+                            // Input for Riddles
                             <>
                                 {status === 'LOSE' ? (
-                                    <div style={{ margin: '1rem 0', color: '#ff4757', fontSize: '1.4rem', fontWeight: '900' }}>
-                                        {currentChallenge.answer}
+                                    <div style={{ margin: '1rem 0', animation: 'bounce 0.5s' }}>
+                                        <div style={{ color: '#ff4757', fontSize: '1.2rem', fontWeight: '900' }}>
+                                            {currentChallenge.answer}
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem', color: '#57606f', marginTop: '5px' }}>
+                                            {currentChallenge.explanation}
+                                        </div>
                                     </div>
                                 ) : (
                                     <input
@@ -228,46 +230,37 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                                             setInput(e.target.value);
                                             checkTextAnswer(e.target.value);
                                         }}
-                                        placeholder="Escribe tu respuesta..."
+                                        placeholder="Respuesta..."
                                         disabled={status !== 'PLAYING'}
                                         autoComplete="off"
+                                        style={{ fontSize: '1.2rem' }}
                                     />
                                 )}
                             </>
                         )}
 
-                        {/* Viral Share Button */}
+                        {/* Viral Share */}
                         {(status === 'WIN' || status === 'LOSE') && (
                             <button
                                 className="btn shake"
                                 onClick={() => {
-                                    const text = status === 'WIN'
-                                        ? `🧠 ¡He acertado esta adivinanza en Adiviname! ¿Puedes tú?`
-                                        : `🙈 ¡Casi! Esta adivinanza me ha ganado. Juega en Adiviname.`;
+                                    const text = `🧠 Reto: ${currentChallenge.question}\n👉 Juega en Adiviname`;
                                     navigator.clipboard.writeText(text);
-                                    alert('¡Copiado al portapapeles! Compártelo 📲');
+                                    alert('¡Copiado!');
                                 }}
-                                style={{ marginTop: '1rem', background: '#3742FA', boxShadow: '0 8px 0 #2F35DF' }}
+                                style={{ marginTop: '0.5rem', background: '#3742FA', boxShadow: '0 6px 0 #2F35DF', fontSize: '1rem', padding: '0.6rem' }}
                             >
-                                📲 RETAR AMIGOS
+                                📲 COMPARTIR
                             </button>
                         )}
 
-                        {/* WIN STATE OVERLAY */}
+                        {/* WIN OVERLAY */}
                         {status === 'WIN' && (
                             <div style={{
-                                position: 'absolute', top: '40%', left: 0, right: 0,
-                                textAlign: 'center', textShadow: '0 4px 10px rgba(0,0,0,0.2)',
-                                pointerEvents: 'none'
+                                position: 'absolute', top: '35%', left: 0, right: 0,
+                                textAlign: 'center', pointerEvents: 'none', zIndex: 100
                             }}>
-                                <span style={{ fontSize: '4rem', animation: 'pop 0.3s' }}>🎉</span>
-                            </div>
-                        )}
-
-                        {/* HINT */}
-                        {(timeLeft < 10 && currentChallenge.hint) && (
-                            <div className="hint-pill" style={{ marginTop: '1rem', opacity: 0.8 }}>
-                                💡 {currentChallenge.hint}
+                                <span style={{ fontSize: '5rem', animation: 'pop 0.5s', display: 'block' }}>🎉</span>
                             </div>
                         )}
                     </>
