@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { challenges } from '../data'
+import { getChallenge } from '../data' // Import generator instead of static array
 import Avatar from './Avatar'
 
 // Backgrounds
@@ -13,15 +13,14 @@ const backgrounds = [bgForest, bgSky, bgVillage, bgMeadow];
 export default function SoloGame({ lang, avatarType, onExit, incrementCount, checkLimit }) {
 
     const [currentChallenge, setCurrentChallenge] = useState(null);
+    const [bgIndex, setBgIndex] = useState(0);
 
     // Game State
     const [input, setInput] = useState('');
     const [timeLeft, setTimeLeft] = useState(20);
     const [status, setStatus] = useState('PLAYING'); // PLAYING, WIN, LOSE, PAUSED
     const [shake, setShake] = useState(false);
-    const [showHint, setShowHint] = useState(false);
     const [combo, setCombo] = useState(0);
-    const [score, setScore] = useState(0);
 
     const timerRef = useRef(null);
 
@@ -35,27 +34,19 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
             return;
         }
 
-        // Just pick random from all for now (Language filter removed as new data is mixed/ES mostly)
-        // In a real app we'd filter by lang property if scaling
-        const pool = challenges;
-
-        let nextIdx;
-        let nextChallenge;
-        let attempts = 0;
-
-        do {
-            nextIdx = Math.floor(Math.random() * pool.length);
-            nextChallenge = pool[nextIdx];
-            attempts++;
-        } while (currentChallenge && nextChallenge.id === currentChallenge.id && attempts < 5);
+        // --- INFINITE CONTENT GENERATOR CALL ---
+        // Instead of picking from a finite list, we generate one on the fly.
+        const nextChallenge = getChallenge();
 
         setCurrentChallenge(nextChallenge);
+
+        // Cycle Backgrounds
+        setBgIndex(prev => (prev + 1) % backgrounds.length);
 
         // Reset State
         setInput('');
         setStatus('PLAYING');
-        setTimeLeft(currentChallenge?.time_limit || 20);
-        setShowHint(false);
+        setTimeLeft(nextChallenge.time_limit || 20);
         setShake(false);
     };
 
@@ -85,13 +76,12 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
         setTimeout(() => {
             loadQuestion();
-        }, 3500); // More time to read explanation
+        }, 3500);
     };
 
     const handleWin = () => {
         setStatus('WIN');
         setCombo(c => c + 1);
-        setScore(s => s + 10 * (combo + 1));
         clearInterval(timerRef.current);
         incrementCount();
         if (navigator.vibrate) navigator.vibrate(50);
@@ -106,17 +96,17 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
     // Text Input (Riddle)
     const checkTextAnswer = (val) => {
         const clean = (str) => str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const info = currentChallenge.answer.toString(); // Handle numbers as strings
+        const info = currentChallenge.answer.toString();
         if (clean(val) === clean(info)) {
             handleWin();
         }
     };
 
-    // Option Selection (Logic/Pattern/Trick)
+    // Option Selection
     const checkOption = (opt) => {
         if (status !== 'PLAYING') return;
 
-        if (opt === currentChallenge.answer) {
+        if (opt.toString() === currentChallenge.answer.toString()) {
             handleWin();
         } else {
             setShake(true);
@@ -130,24 +120,19 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
     if (!currentChallenge) return null;
 
-    const bgImage = backgrounds[(currentChallenge.id.length) % backgrounds.length];
+    const currentBg = backgrounds[bgIndex];
     const progressPct = (timeLeft / 20) * 100;
 
     return (
         <>
             <div
                 style={{
-                    position: 'fixed',
-                    top: 0, left: 0, width: '100%', height: '100%',
-                    backgroundImage: `url(${bgImage})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    zIndex: -1,
-                    transition: 'background-image 0.5s ease-out'
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundImage: `url(${currentBg})`, backgroundSize: 'cover', backgroundPosition: 'center',
+                    zIndex: -1, transition: 'background-image 0.5s ease-out'
                 }}
             />
 
-            {/* Card Content - Mobile Optimized Padding */}
             <div className={`card ${status === 'WIN' ? 'pop-in' : ''} ${shake ? 'shake' : ''}`} style={{ padding: '1.5rem 1rem' }}>
 
                 {/* Header */}
@@ -179,23 +164,22 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                     <>
                         <Avatar state={status} type={avatarType} />
 
-                        {/* Tags Pill */}
+                        {/* Tags */}
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginBottom: '10px' }}>
                             <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', background: '#dfe4ea', padding: '2px 8px', borderRadius: '10px', color: '#747d8c', fontWeight: 'bold' }}>
                                 {currentChallenge.type}
                             </span>
                             <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', background: '#ffeaa7', padding: '2px 8px', borderRadius: '10px', color: '#d35400', fontWeight: 'bold' }}>
-                                NVL {currentChallenge.difficulty}
+                                INFINITO
                             </span>
                         </div>
 
-                        {/* Question Text - Smaller for mobile */}
+                        {/* Question */}
                         <h2 style={{ fontSize: '1.4rem', marginBottom: '1rem', minHeight: '50px', color: '#2f3542', lineHeight: '1.2' }}>
                             {currentChallenge.question}
                         </h2>
 
-                        {/* --- RENDER BASED ON TYPE --- */}
-
+                        {/* Options or Input */}
                         {currentChallenge.options ? (
                             <div className="options-grid">
                                 {currentChallenge.options.map((opt, idx) => (
@@ -203,14 +187,13 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                                         key={idx}
                                         className="btn btn-option"
                                         onClick={() => checkOption(opt)}
-                                        style={{ fontSize: '1.1rem', padding: '0.6rem' }}
+                                        style={{ fontSize: '1.2rem', padding: '0.8rem' }}
                                     >
                                         {opt}
                                     </button>
                                 ))}
                             </div>
                         ) : (
-                            // Input for Riddles
                             <>
                                 {status === 'LOSE' ? (
                                     <div style={{ margin: '1rem 0', animation: 'bounce 0.5s' }}>
@@ -254,12 +237,8 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                             </button>
                         )}
 
-                        {/* WIN OVERLAY */}
                         {status === 'WIN' && (
-                            <div style={{
-                                position: 'absolute', top: '35%', left: 0, right: 0,
-                                textAlign: 'center', pointerEvents: 'none', zIndex: 100
-                            }}>
+                            <div style={{ position: 'absolute', top: '35%', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', zIndex: 100 }}>
                                 <span style={{ fontSize: '5rem', animation: 'pop 0.5s', display: 'block' }}>🎉</span>
                             </div>
                         )}
