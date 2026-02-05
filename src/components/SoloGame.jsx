@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { riddles } from '../data'
+import { challenges } from '../data'
 import Avatar from './Avatar'
 
+// Backgrounds (using existing Ghibli ones as placeholders for now)
 import bgForest from '../assets/ghibli/bg_forest_1770314298231.png';
 import bgSky from '../assets/ghibli/bg_sky_1770314324055.png';
 import bgVillage from '../assets/ghibli/bg_village_1770314337439.png';
@@ -11,74 +12,56 @@ const backgrounds = [bgForest, bgSky, bgVillage, bgMeadow];
 
 export default function SoloGame({ lang, avatarType, onExit, incrementCount, checkLimit }) {
 
-    // Filter riddles by language for initial check
-    const langPool = riddles.filter(r => r.lang === lang);
+    const [currentChallenge, setCurrentChallenge] = useState(null);
 
-    const [currentIndex, setCurrentIndex] = useState(0);
+    // Game State
     const [input, setInput] = useState('');
     const [timeLeft, setTimeLeft] = useState(20);
     const [status, setStatus] = useState('PLAYING'); // PLAYING, WIN, LOSE, PAUSED
     const [shake, setShake] = useState(false);
     const [showHint, setShowHint] = useState(false);
-    const [difficulty, setDifficulty] = useState(1); // 1: Fácil, 2: Medio, 3: Difícil
+    const [combo, setCombo] = useState(0); // Viral mechanic: streaks
+    const [score, setScore] = useState(0);
 
-    // Timer Ref to clear it
     const timerRef = useRef(null);
 
-    // Init on mount
+    // Initial Load
     useEffect(() => {
         loadQuestion();
     }, []);
 
-    // Sound refs (placeholder)
-    const successSound = useRef(null);
-    const failSound = useRef(null);
-
-    // Load next question or end if no more
     const loadQuestion = () => {
         if (!checkLimit()) {
             onExit();
             return;
         }
 
-        // Filter by lang
-        let langPool = riddles.filter(r => r.lang === lang);
+        // 1. Filter by Language
+        const langPool = challenges.filter(c => c.lang === lang);
+        if (langPool.length === 0) return;
 
-        // Filter by difficulty
-        let pool = langPool.filter(r => r.difficulty === difficulty);
-
-        // Fallback if no riddles for this difficulty (e.g. incomplete languages), use any
-        if (pool.length === 0) pool = langPool;
-
-        if (pool.length === 0) return; // No riddles at all for this language
-
+        // 2. Pick Random Challenge (Viral mix)
         let nextIdx;
-        // Ensure we don't repeat the same question immediately if possible
-        // Note: ID based check is safer as indices change with filtering
-        const currentId = riddles[currentIndex]?.id;
+        let nextChallenge;
+        let attempts = 0;
 
-        if (pool.length > 1) {
-            let attempts = 0;
-            do {
-                nextIdx = Math.floor(Math.random() * pool.length);
-                attempts++;
-            } while (pool[nextIdx].id === currentId && attempts < 5);
-        } else {
-            nextIdx = 0;
-        }
+        do {
+            nextIdx = Math.floor(Math.random() * langPool.length);
+            nextChallenge = langPool[nextIdx];
+            attempts++;
+        } while (currentChallenge && nextChallenge.id === currentChallenge.id && attempts < 5);
 
-        // Find the global index of the chosen riddle
-        const globalIndex = riddles.findIndex(r => r.id === pool[nextIdx].id);
+        setCurrentChallenge(nextChallenge);
 
-        setCurrentIndex(globalIndex);
+        // Reset State
         setInput('');
         setStatus('PLAYING');
-        setTimeLeft(20);
+        setTimeLeft(20); // Fast pacing!
         setShowHint(false);
         setShake(false);
     };
 
-    // Start Timer Logic
+    // Timer Logic
     useEffect(() => {
         if (status !== 'PLAYING') return;
 
@@ -93,192 +76,198 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
         }, 100);
 
         return () => clearInterval(timerRef.current);
-    }, [status, currentIndex]);
+    }, [status, currentChallenge]);
 
     const handleLose = () => {
         setStatus('LOSE');
+        setCombo(0); // Reset combo
         clearInterval(timerRef.current);
         incrementCount();
-        if (navigator.vibrate) navigator.vibrate(200);
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Angry vibe
 
         setTimeout(() => {
             loadQuestion();
-        }, 4000);
+        }, 3000);
     };
 
     const handleWin = () => {
-        // Difficulty Logic
-        const timeTaken = 20 - timeLeft;
-        if (timeTaken < 8) {
-            setDifficulty(prev => Math.min(prev + 1, 3));
-        } else if (timeTaken > 15) {
-            setDifficulty(prev => Math.max(prev - 1, 1));
-        }
-
         setStatus('WIN');
+        setCombo(c => c + 1); // Increase combo
+        setScore(s => s + 10 * (combo + 1));
         clearInterval(timerRef.current);
         incrementCount();
-        if (navigator.vibrate) navigator.vibrate(50);
+        if (navigator.vibrate) navigator.vibrate(50); // Nice tick
+
+        // Viral: Check for "Juicy" moments
+        // TODO: Confetti trigger here
 
         setTimeout(() => {
             loadQuestion();
         }, 1500);
     };
 
-    const checkAnswer = (val) => {
-        const currentRiddle = riddles[currentIndex];
-        if (!currentRiddle) return;
+    // --- LOGIC FOR DIFFERENT TYPES ---
 
+    // 1. Text Input (Classic Riddle)
+    const checkTextAnswer = (val) => {
         const clean = (str) => str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-        if (clean(val) === clean(currentRiddle.answer)) {
+        if (clean(val) === clean(currentChallenge.answer)) {
             handleWin();
         }
     };
 
-    const handleChange = (e) => {
+    // 2. Option Selection (Logic/Math)
+    const checkOption = (idx) => {
         if (status !== 'PLAYING') return;
-        setInput(e.target.value);
-        checkAnswer(e.target.value);
+
+        if (idx === currentChallenge.correctOption) {
+            handleWin();
+        } else {
+            // Wrong option clicked
+            setShake(true);
+            if (navigator.vibrate) navigator.vibrate(200);
+            setTimeout(() => setShake(false), 500);
+            // Optional: Penalize time?
+            setTimeLeft(t => Math.max(0, t - 5));
+        }
     };
 
     const togglePause = () => {
-        if (status === 'PLAYING') {
-            setStatus('PAUSED');
-        } else if (status === 'PAUSED') {
-            setStatus('PLAYING');
-        }
+        setStatus(prev => prev === 'PLAYING' ? 'PAUSED' : 'PLAYING');
     };
 
-    // Skip if no riddles for lang
-    if (langPool.length === 0) {
-        return (
-            <div className="card">
-                <h2>Lo sentimos</h2>
-                <p>No hay adivinanzas en este idioma aún.</p>
-                <button className="btn" onClick={onExit}>Volver</button>
-            </div>
-        );
-    }
+    // Render Helpers
+    if (!currentChallenge) return null;
 
-    // Use global riddles based on global index
-    const currentRiddle = riddles[currentIndex];
-
-    // Checking safety of currentRiddle
-    if (!currentRiddle) return null;
-
-    // Auto-show hint after 5 seconds
-    useEffect(() => {
-        if (timeLeft < 15 && status === 'PLAYING') {
-            setShowHint(true);
-        }
-    }, [timeLeft, status]);
-
-    // Calculate Progress for Bar (Total 20s)
+    const bgImage = backgrounds[(currentChallenge.id) % backgrounds.length];
     const progressPct = (timeLeft / 20) * 100;
-
-    // Background Selection based on index
-    const currentBg = backgrounds[currentIndex % backgrounds.length];
 
     return (
         <>
+            {/* Background Layer */}
             <div
                 style={{
                     position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundImage: `url(${currentBg})`,
+                    top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundImage: `url(${bgImage})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     zIndex: -1,
-                    transition: 'background-image 1s ease-in-out'
+                    transition: 'background-image 0.5s ease-out'
                 }}
             />
 
-            <div className={`card ${status === 'WIN' ? 'success-glow' : ''}`} style={{ background: 'rgba(255, 255, 255, 0.95)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
-                    <button
-                        className="icon-btn"
-                        onClick={onExit}
-                        style={{ fontSize: '1.5rem', color: 'white', background: '#e74c3c' }}
-                    >
-                        ✕
-                    </button>
+            <div className={`card ${status === 'WIN' ? 'pop-in' : ''} ${shake ? 'shake' : ''}`}>
 
-                    {/* Pause Button */}
-                    {(status === 'PLAYING' || status === 'PAUSED') && (
-                        <button
-                            className="icon-btn"
-                            onClick={togglePause}
-                            style={{ fontSize: '2rem' }}
-                        >
-                            {status === 'PAUSED' ? '▶️' : '⏸️'}
-                        </button>
+                {/* Header: Score & Timer */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
+                    <button className="icon-btn" onClick={onExit} style={{ background: '#FF4757', color: 'white', border: 'none' }}>✕</button>
+
+                    {/* Combo Counter (Viral Element) */}
+                    {combo > 1 && (
+                        <div style={{ background: '#ffa502', padding: '0.2rem 0.8rem', borderRadius: '20px', color: 'white', fontWeight: 'bold', transform: 'rotate(-5deg)' }}>
+                            🔥 {combo}
+                        </div>
                     )}
 
-                    <div style={{ fontWeight: '900', fontSize: '1.5rem', fontFamily: 'monospace', color: timeLeft < 5 ? 'var(--error)' : 'black' }}>
+                    <div style={{ fontWeight: '900', fontSize: '1.5rem', fontFamily: 'monospace', color: timeLeft < 5 ? '#ff4757' : '#2f3542' }}>
                         {Math.ceil(timeLeft)}s
                     </div>
                 </div>
 
+                {/* Progress Bar */}
                 <div className="progress-bar">
-                    <div
-                        className="progress-fill"
-                        style={{
-                            width: `${progressPct}%`,
-                            background: timeLeft < 5 ? 'var(--error)' : undefined
-                        }}
-                    />
+                    <div className="progress-fill" style={{ width: `${progressPct}%`, background: timeLeft < 5 ? '#ff4757' : '#2ed573' }} />
                 </div>
 
                 {status === 'PAUSED' ? (
-                    <div style={{ padding: '2rem 0', textAlign: 'center' }}>
-                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⏸️</div>
-                        <h3 style={{ fontSize: '2rem' }}>PAUSA</h3>
-                        <p style={{ opacity: 0.8 }}>Relájate y piensa...</p>
-                        <button className="btn" onClick={togglePause} style={{ marginTop: '2rem' }}>REANUDAR</button>
+                    <div style={{ padding: '2rem 0' }}>
+                        <h1>PAUSA</h1>
+                        <button className="btn" onClick={togglePause}>CONTINUAR</button>
                     </div>
                 ) : (
                     <>
                         <Avatar state={status} type={avatarType} />
 
-                        <div style={{ fontSize: '0.9rem', color: '#666', fontWeight: 'bold', marginBottom: '0.5rem', letterSpacing: '1px' }}>
-                            NIVEL: {difficulty === 1 ? '⭐ FÁCIL' : difficulty === 2 ? '⭐⭐ MEDIO' : '⭐⭐⭐ DIFÍCIL'}
-                        </div>
-
-                        <h2 style={{ fontSize: '1.8rem', marginBottom: '2rem', minHeight: '80px', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                            {currentRiddle.text}
+                        {/* Challenge Text */}
+                        <h2 style={{ fontSize: '1.6rem', marginBottom: '1.5rem', minHeight: '60px', color: '#2f3542' }}>
+                            {currentChallenge.text}
                         </h2>
 
-                        {status === 'LOSE' ? (
-                            <div style={{ margin: '1rem 0', color: 'var(--primary)', fontSize: '1.5rem', fontWeight: '900', animation: 'bounce 0.5s' }}>
-                                ¡Ooops! 🙈 <br />
-                                Era: {currentRiddle.answer}
+                        {/* --- RENDER BASED ON TYPE --- */}
+
+                        {/* TYPE: LOGIC / MATH / TRICK (Buttons) */}
+                        {['LOGIC', 'MATH', 'TRICK'].includes(currentChallenge.type) && currentChallenge.options && (
+                            <div className="options-grid">
+                                {currentChallenge.options.map((opt, idx) => (
+                                    <button
+                                        key={idx}
+                                        className="btn btn-option"
+                                        onClick={() => checkOption(idx)}
+                                        style={{ fontSize: '1.2rem', padding: '0.8rem' }}
+                                    >
+                                        {opt}
+                                    </button>
+                                ))}
                             </div>
-                        ) : (
-                            <input
-                                autoFocus
-                                className={`input ${shake ? 'shake' : ''}`}
-                                value={input}
-                                onChange={handleChange}
-                                placeholder="TU RESPUESTA..."
-                                disabled={status !== 'PLAYING'}
-                                autoComplete="off"
-                            />
                         )}
 
-                        {/* Hint Area */}
-                        <div className={`hint-box ${showHint ? 'hint-visible' : ''}`}>
-                            <div className="hint-pill">
-                                💡 Pista: {currentRiddle.hint}
-                            </div>
-                        </div>
+                        {/* TYPE: RIDDLE (Text Input) */}
+                        {currentChallenge.type === 'RIDDLE' && (
+                            <>
+                                {status === 'LOSE' ? (
+                                    <div style={{ margin: '1rem 0', color: '#ff4757', fontSize: '1.4rem', fontWeight: '900' }}>
+                                        {currentChallenge.answer}
+                                    </div>
+                                ) : (
+                                    <input
+                                        autoFocus
+                                        className="input"
+                                        value={input}
+                                        onChange={(e) => {
+                                            setInput(e.target.value);
+                                            checkTextAnswer(e.target.value);
+                                        }}
+                                        placeholder="Escribe tu respuesta..."
+                                        disabled={status !== 'PLAYING'}
+                                        autoComplete="off"
+                                    />
+                                )}
+                            </>
+                        )}
 
+                        {/* Viral Share Button */}
+                        {(status === 'WIN' || status === 'LOSE') && (
+                            <button
+                                className="btn shake"
+                                onClick={() => {
+                                    const text = status === 'WIN'
+                                        ? `🧠 ¡He acertado esta adivinanza en Adiviname! ¿Puedes tú?`
+                                        : `🙈 ¡Casi! Esta adivinanza me ha ganado. Juega en Adiviname.`;
+                                    navigator.clipboard.writeText(text);
+                                    alert('¡Copiado al portapapeles! Compártelo 📲');
+                                }}
+                                style={{ marginTop: '1rem', background: '#3742FA', boxShadow: '0 8px 0 #2F35DF' }}
+                            >
+                                📲 RETAR AMIGOS
+                            </button>
+                        )}
+
+                        {/* WIN STATE OVERLAY */}
                         {status === 'WIN' && (
-                            <div className="success-text">
-                                ¡CORRECTO! 🎉
+                            <div style={{
+                                position: 'absolute', top: '40%', left: 0, right: 0,
+                                textAlign: 'center', textShadow: '0 4px 10px rgba(0,0,0,0.2)',
+                                pointerEvents: 'none'
+                            }}>
+                                <span style={{ fontSize: '4rem', animation: 'pop 0.3s' }}>🎉</span>
+                            </div>
+                        )}
+
+                        {/* HINT */}
+                        {(timeLeft < 10 && currentChallenge.hint) && (
+                            <div className="hint-pill" style={{ marginTop: '1rem', opacity: 0.8 }}>
+                                💡 {currentChallenge.hint}
                             </div>
                         )}
                     </>
