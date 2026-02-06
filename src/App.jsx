@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { riddles } from './data'
 import SoloGame from './components/SoloGame'
 
-import avatarMan from './assets/ghibli/avatar_man_1770314228842.png';
-import avatarWoman from './assets/ghibli/avatar_woman_1770314242810.png';
-import avatarBoy from './assets/ghibli/avatar_boy_1770314264310.png';
-import avatarGirl from './assets/ghibli/avatar_girl_1770314277182.png';
+import wizardMale from './assets/ghibli/avatar_wizard_male_1770352326452.png';
+import wizardFemale from './assets/ghibli/avatar_wizard_female_1770352340184.png';
+import scholarBoy from './assets/ghibli/avatar_scholar_boy_1770352353298.png';
+import scholarGirl from './assets/ghibli/avatar_scholar_girl_1770352375815.png';
 
 function App() {
   const [lang, setLang] = useState('es');
@@ -112,13 +112,13 @@ function App() {
 
             {/* Avatar Selection */}
             <div style={{ background: '#f0f0f0', padding: '1rem', borderRadius: '4px', border: '2px solid black', marginBottom: '2rem' }}>
-              <p style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'Bangers', letterSpacing: '1px' }}>ELIGE TU PERSONAJE:</p>
+              <p style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'Bangers', letterSpacing: '1px' }}>ELIGE TU MAGO/ERUDITO:</p>
               <div className="avatar-selection-grid" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 {[
-                  { id: 'man', icon: avatarMan },
-                  { id: 'woman', icon: avatarWoman },
-                  { id: 'boy', icon: avatarBoy },
-                  { id: 'girl', icon: avatarGirl }
+                  { id: 'man', icon: wizardMale },
+                  { id: 'woman', icon: wizardFemale },
+                  { id: 'boy', icon: scholarBoy },
+                  { id: 'girl', icon: scholarGirl }
                 ].map(av => (
                   <button
                     key={av.id}

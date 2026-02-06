@@ -1,20 +1,20 @@
 import React from 'react';
 
-import avatarMan from '../assets/ghibli/avatar_man_1770314228842.png';
-import avatarWoman from '../assets/ghibli/avatar_woman_1770314242810.png';
-import avatarBoy from '../assets/ghibli/avatar_boy_1770314264310.png';
-import avatarGirl from '../assets/ghibli/avatar_girl_1770314277182.png';
+import wizardMale from '../assets/ghibli/avatar_wizard_male_1770352326452.png';
+import wizardFemale from '../assets/ghibli/avatar_wizard_female_1770352340184.png';
+import scholarBoy from '../assets/ghibli/avatar_scholar_boy_1770352353298.png';
+import scholarGirl from '../assets/ghibli/avatar_scholar_girl_1770352375815.png';
 
 export default function Avatar({ state, type = 'man' }) {
     // state: 'PLAYING', 'WIN', 'LOSE', 'PAUSED'
-    // type: 'man', 'woman', 'boy', 'girl'
+    // type: 'man', 'woman', 'boy', 'girl' (Maps to Wizards/Scholars)
 
     const getAvatarSrc = () => {
         switch (type) {
-            case 'woman': return avatarWoman;
-            case 'boy': return avatarBoy;
-            case 'girl': return avatarGirl;
-            default: return avatarMan;
+            case 'woman': return wizardFemale;
+            case 'boy': return scholarBoy;
+            case 'girl': return scholarGirl;
+            default: return wizardMale;
         }
     };
 

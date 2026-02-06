@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getChallenge } from '../data' // Import generator instead of static array
+import { getChallenge } from '../data'
 import Avatar from './Avatar'
 
 // Backgrounds
@@ -15,10 +15,15 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
     const [currentChallenge, setCurrentChallenge] = useState(null);
     const [bgIndex, setBgIndex] = useState(0);
 
+    // NO REPEAT LOGIC
+    // We store seen IDs in a ref so it persists across renders but resets on unmount (new game)
+    // If the user wants "Every time game starts it is new", unmount/remount does this.
+    const seenIds = useRef(new Set());
+
     // Game State
     const [input, setInput] = useState('');
     const [timeLeft, setTimeLeft] = useState(20);
-    const [status, setStatus] = useState('PLAYING'); // PLAYING, WIN, LOSE, PAUSED
+    const [status, setStatus] = useState('PLAYING');
     const [shake, setShake] = useState(false);
     const [combo, setCombo] = useState(0);
 
@@ -34,16 +39,22 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
             return;
         }
 
-        // --- INFINITE CONTENT GENERATOR CALL ---
-        // Instead of picking from a finite list, we generate one on the fly.
-        const nextChallenge = getChallenge();
+        // --- INFINITE CONTENT GENERATOR WITH UNIQUE GUARD ---
+        let nextChallenge;
+        let attempts = 0;
+
+        // Try up to 20 times to find a unique challenge
+        do {
+            nextChallenge = getChallenge();
+            attempts++;
+        } while (seenIds.current.has(nextChallenge.id) && attempts < 20);
+
+        // Mark as seen
+        seenIds.current.add(nextChallenge.id);
 
         setCurrentChallenge(nextChallenge);
-
-        // Cycle Backgrounds
         setBgIndex(prev => (prev + 1) % backgrounds.length);
 
-        // Reset State
         setInput('');
         setStatus('PLAYING');
         setTimeLeft(nextChallenge.time_limit || 20);
@@ -93,7 +104,6 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
     // --- LOGIC ---
 
-    // Text Input (Riddle)
     const checkTextAnswer = (val) => {
         const clean = (str) => str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const info = currentChallenge.answer.toString();
@@ -102,7 +112,6 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
         }
     };
 
-    // Option Selection
     const checkOption = (opt) => {
         if (status !== 'PLAYING') return;
 
@@ -170,7 +179,7 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                                 {currentChallenge.type}
                             </span>
                             <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', background: '#ffeaa7', padding: '2px 8px', borderRadius: '10px', color: '#d35400', fontWeight: 'bold' }}>
-                                INFINITO
+                                UNIQ
                             </span>
                         </div>
 
