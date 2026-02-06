@@ -13,7 +13,7 @@ const backgrounds = [bgForest, bgSky, bgVillage, bgMeadow];
 
 export default function SoloGame({ lang, avatarType, onExit, incrementCount, checkLimit }) {
 
-    const t = getTranslation(lang); // Get current language strings
+    const t = getTranslation(lang);
     const [currentChallenge, setCurrentChallenge] = useState(null);
     const [bgIndex, setBgIndex] = useState(0);
 
@@ -22,11 +22,11 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
     // Game State
     const [input, setInput] = useState('');
-    const [timeLeft, setTimeLeft] = useState(30); // INCREASED TO 30s
+    const [timeLeft, setTimeLeft] = useState(30);
     const [status, setStatus] = useState('PLAYING');
     const [shake, setShake] = useState(false);
     const [combo, setCombo] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false); // To prevent double clicks during win
+    const [isTransitioning, setIsTransitioning] = useState(false);
 
     const timerRef = useRef(null);
 
@@ -55,7 +55,7 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
         setInput('');
         setStatus('PLAYING');
-        setTimeLeft(nextChallenge.time_limit || 30); // Default 30s
+        setTimeLeft(nextChallenge.time_limit || 30);
         setShake(false);
         setIsTransitioning(false);
     };
@@ -83,10 +83,6 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
         clearInterval(timerRef.current);
         incrementCount();
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-        setTimeout(() => {
-            loadQuestion();
-        }, 3500);
     };
 
     const handleWin = () => {
@@ -99,20 +95,38 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
         incrementCount();
         if (navigator.vibrate) navigator.vibrate(50);
 
-        // INSTANT TRANSITION (Reduced wait to 800ms for just a quick "pop" feeling)
         setTimeout(() => {
             loadQuestion();
-        }, 800);
+        }, 1200); // Slightly longer to appreciate the animation
+    };
+
+    const handleRestart = () => {
+        seenIds.current.clear();
+        setCombo(0);
+        loadQuestion();
     };
 
     // --- LOGIC ---
 
-    const checkTextAnswer = (val) => {
+    const checkTextAnswer = () => {
+        if (!input) return;
+
         const clean = (str) => str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const info = currentChallenge.answer.toString();
-        if (clean(val) === clean(info)) {
+
+        if (clean(input) === clean(info)) {
             handleWin();
+        } else {
+            setShake(true);
+            if (navigator.vibrate) navigator.vibrate(200);
+            setTimeout(() => setShake(false), 500);
+            setTimeLeft(t => Math.max(0, t - 5));
         }
+    };
+
+    // For text input, we still check on Enter key for convenience
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') checkTextAnswer();
     };
 
     const checkOption = (opt) => {
@@ -133,11 +147,10 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
     if (!currentChallenge) return null;
 
     const currentBg = backgrounds[bgIndex];
-    const progressPct = (timeLeft / 30) * 100; // Updated base to 30
+    const progressPct = (timeLeft / 30) * 100;
 
     return (
         <>
-            {/* ANIMATED BG EFFECT: Scale slightly to allow movement */}
             <div
                 style={{
                     position: 'fixed', top: -20, left: -20, right: -20, bottom: -20,
@@ -146,7 +159,7 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                     backgroundPosition: 'center',
                     zIndex: -1,
                     transition: 'background-image 0.5s ease-out',
-                    animation: 'bgPan 20s infinite ease-in-out alternate' /* CSS Animation added */
+                    animation: 'bgPan 20s infinite ease-in-out alternate'
                 }}
             />
 
@@ -154,11 +167,15 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
-                    <button className="icon-btn" onClick={onExit} style={{ background: '#FF4757', color: 'white', border: 'none', width: '35px', height: '35px', fontSize: '1.2rem' }}>✕</button>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button className="icon-btn" onClick={onExit} style={{ background: '#FF4757', color: 'white', border: 'none', width: '35px', height: '35px', fontSize: '1.2rem' }}>✕</button>
+                        <button className="icon-btn" onClick={handleRestart} style={{ background: '#ffa502', color: 'white', border: 'none', width: '35px', height: '35px', fontSize: '1.2rem' }}>↻</button>
+                    </div>
 
                     {combo > 1 && (
-                        <div style={{ background: '#ffa502', padding: '0.2rem 0.6rem', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '0.9rem', transform: 'rotate(-5deg)' }}>
-                            🔥 {t.streak} {combo}
+                        <div style={{ background: '#2ed573', padding: '0.2rem 0.6rem', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '0.9rem', transform: 'rotate(-5deg)' }}>
+                            🔥 {combo}
                         </div>
                     )}
 
@@ -179,17 +196,14 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                     </div>
                 ) : (
                     <>
-                        {/* Avatar with Animation Class */}
                         <Avatar state={status} type={avatarType} />
 
-                        {/* Tags */}
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginBottom: '10px' }}>
                             <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', background: '#dfe4ea', padding: '2px 8px', borderRadius: '10px', color: '#747d8c', fontWeight: 'bold' }}>
                                 {t[currentChallenge.type] || currentChallenge.type}
                             </span>
                         </div>
 
-                        {/* Question */}
                         <h2 style={{ fontSize: '1.4rem', marginBottom: '1rem', minHeight: '60px', color: '#2f3542', lineHeight: '1.2', textAlign: 'center' }}>
                             {currentChallenge.question}
                         </h2>
@@ -218,21 +232,29 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                                         <div style={{ fontSize: '0.9rem', color: '#57606f', marginTop: '5px' }}>
                                             {currentChallenge.explanation}
                                         </div>
+                                        <button className="btn" onClick={loadQuestion} style={{ marginTop: '1rem' }}>Siguiente</button>
                                     </div>
                                 ) : (
-                                    <input
-                                        autoFocus
-                                        className="input"
-                                        value={input}
-                                        onChange={(e) => {
-                                            setInput(e.target.value);
-                                            checkTextAnswer(e.target.value);
-                                        }}
-                                        placeholder="..."
-                                        disabled={status !== 'PLAYING'}
-                                        autoComplete="off"
-                                        style={{ fontSize: '1.2rem' }}
-                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <input
+                                            autoFocus
+                                            className="input"
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                            placeholder="..."
+                                            disabled={status !== 'PLAYING'}
+                                            autoComplete="off"
+                                            style={{ fontSize: '1.2rem' }}
+                                        />
+                                        <button
+                                            className="btn"
+                                            onClick={checkTextAnswer}
+                                            style={{ background: '#2ed573', boxShadow: '0 6px 0 #26af61' }}
+                                        >
+                                            {t.check}
+                                        </button>
+                                    </div>
                                 )}
                             </>
                         )}
@@ -250,12 +272,6 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                             >
                                 {t.share}
                             </button>
-                        )}
-
-                        {status === 'WIN' && (
-                            <div style={{ position: 'absolute', top: '35%', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', zIndex: 100 }}>
-                                <span style={{ fontSize: '5rem', animation: 'pop 0.3s', display: 'block' }}>🎉</span>
-                            </div>
                         )}
                     </>
                 )}

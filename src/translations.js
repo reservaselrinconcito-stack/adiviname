@@ -24,7 +24,9 @@ export const UI_TRANSLATIONS = {
         modal_limit_title: "¡OH NO!",
         modal_limit_msg: "Se acabaron las partidas gratis.",
         modal_unlock: "DESBLOQUEAR AHORA",
-        modal_later: "Volver mañana"
+        modal_later: "Volver mañana",
+        check: "COMPROBAR",
+        restart: "REINICIAR"
     },
     cat: {
         title: "ENDEVINA'M",
@@ -51,7 +53,9 @@ export const UI_TRANSLATIONS = {
         modal_limit_title: "OH NO!",
         modal_limit_msg: "S'han acabat les partides gratis.",
         modal_unlock: "DESBLOQUEJAR ARA",
-        modal_later: "Tornar demà"
+        modal_later: "Tornar demà",
+        check: "COMPROVAR",
+        restart: "REINICIAR"
     },
     gal: {
         title: "ADIVIÑAME",
@@ -78,7 +82,9 @@ export const UI_TRANSLATIONS = {
         modal_limit_title: "OH NON!",
         modal_limit_msg: "Remataron as partidas gratis.",
         modal_unlock: "DESBLOQUEAR AGORA",
-        modal_later: "Volver mañá"
+        modal_later: "Volver mañá",
+        check: "COMPROBAR",
+        restart: "REINICIAR"
     },
     eus: {
         title: "ASMA EZAZU",
@@ -105,7 +111,9 @@ export const UI_TRANSLATIONS = {
         modal_limit_title: "AI OROI!",
         modal_limit_msg: "Partida doan amaitu dira.",
         modal_unlock: "DESBLOKETU ORAIN",
-        modal_later: "Itzuli bihar"
+        modal_later: "Itzuli bihar",
+        check: "EGIAZTATU",
+        restart: "BERRABIARAZI"
     },
     aran: {
         title: "ENDEVINA-ME",
@@ -132,7 +140,9 @@ export const UI_TRANSLATIONS = {
         modal_limit_title: "OH NO!",
         modal_limit_msg: "S'an acabat es partides gratis.",
         modal_unlock: "DESBLOCAR ARA",
-        modal_later: "Tornar deman"
+        modal_later: "Tornar deman",
+        check: "COMPROVAR",
+        restart: "REINICIAR"
     }
 };
 
