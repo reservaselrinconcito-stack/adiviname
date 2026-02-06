@@ -26,7 +26,16 @@ export const UI_TRANSLATIONS = {
         modal_unlock: "DESBLOQUEAR AHORA",
         modal_later: "Volver mañana",
         check: "COMPROBAR",
-        restart: "REINICIAR"
+        restart: "REINICIAR",
+        // New Generator Strings
+        algebra_exp: "Resuelve las ecuaciones visuales.",
+        spatial_q: "Mirando al Norte...",
+        spatial_exp: "Sigue las instrucciones de giro.",
+        counting_q: "¿Cuántos hay?",
+        counting_exp: "Cuenta rápido todos los elementos.",
+        time_exp: "Calcula el día o la hora correcta.",
+        odd_one_q: "¿Cuál sobra?",
+        odd_one_exp: "Encuentra el elemento diferente."
     },
     cat: {
         title: "ENDEVINA'M",
@@ -55,7 +64,15 @@ export const UI_TRANSLATIONS = {
         modal_unlock: "DESBLOQUEJAR ARA",
         modal_later: "Tornar demà",
         check: "COMPROVAR",
-        restart: "REINICIAR"
+        restart: "REINICIAR",
+        algebra_exp: "Resol les equacions visuals.",
+        spatial_q: "Mirant al Nord...",
+        spatial_exp: "Segueix les instruccions de gir.",
+        counting_q: "Quants n'hi ha?",
+        counting_exp: "Compta ràpid tots els elements.",
+        time_exp: "Calcula el dia o l'hora correcta.",
+        odd_one_q: "Quin sobra?",
+        odd_one_exp: "Troba l'element diferent."
     },
     gal: {
         title: "ADIVIÑAME",
@@ -84,7 +101,15 @@ export const UI_TRANSLATIONS = {
         modal_unlock: "DESBLOQUEAR AGORA",
         modal_later: "Volver mañá",
         check: "COMPROBAR",
-        restart: "REINICIAR"
+        restart: "REINICIAR",
+        algebra_exp: "Resolve as ecuaciones visuais.",
+        spatial_q: "Mirando ao Norte...",
+        spatial_exp: "Segue as instrucións de xiro.",
+        counting_q: "Cantos hai?",
+        counting_exp: "Conta rápido todos os elementos.",
+        time_exp: "Calcula o día ou a hora correcta.",
+        odd_one_q: "Cal sobra?",
+        odd_one_exp: "Atopa o elemento diferente."
     },
     eus: {
         title: "ASMA EZAZU",
@@ -113,7 +138,15 @@ export const UI_TRANSLATIONS = {
         modal_unlock: "DESBLOKETU ORAIN",
         modal_later: "Itzuli bihar",
         check: "EGIAZTATU",
-        restart: "BERRABIARAZI"
+        restart: "BERRABIARAZI",
+        algebra_exp: "Ebatzi ekuazio bisualak.",
+        spatial_q: "Iparraldera begira...",
+        spatial_exp: "Jarraitu biratzeko argibideak.",
+        counting_q: "Zenbat daude?",
+        counting_exp: "Zenbatu azkar elementu guztiak.",
+        time_exp: "Kalkulatu egun edo ordu zuzena.",
+        odd_one_q: "Zein dago soberan?",
+        odd_one_exp: "Aurkitu elementu desberdina."
     },
     aran: {
         title: "ENDEVINA-ME",
@@ -142,7 +175,15 @@ export const UI_TRANSLATIONS = {
         modal_unlock: "DESBLOCAR ARA",
         modal_later: "Tornar deman",
         check: "COMPROVAR",
-        restart: "REINICIAR"
+        restart: "REINICIAR",
+        algebra_exp: "Resòlv es eqüacions visuales.",
+        spatial_q: "Mirant ath Nòrd...",
+        spatial_exp: "Seguís es instruccions de virada.",
+        counting_q: "Quants n'i a?",
+        counting_exp: "Compte rapid toti es elements.",
+        time_exp: "Calcule eth dia o era ora corrècta.",
+        odd_one_q: "Quin sòbre?",
+        odd_one_exp: "Tròbe er element diferent."
     }
 };
 
