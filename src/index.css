@@ -260,6 +260,38 @@ h1 {
   animation: panic 1s infinite ease-in-out;
 }
 
+@keyframes bounce-idle {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes sway-idle {
+
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+.avatar-bounce {
+  animation: bounce-idle 1.5s ease-in-out infinite;
+}
+
+.avatar-sway {
+  animation: sway-idle 2s ease-in-out infinite;
+}
+
 @keyframes breathe {
 
   0%,

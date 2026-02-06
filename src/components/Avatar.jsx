@@ -1,11 +1,10 @@
+import React, { useState, useEffect } from 'react';
 
-import React from 'react';
-
-// NEUTRAL (IDLE)
-import wizardMale from '../assets/ghibli/pixar_wizard_male_1770352949377.png';
-import wizardFemale from '../assets/ghibli/pixar_wizard_female_1770353002544.png';
-import scholarBoy from '../assets/ghibli/pixar_scholar_boy_1770352976814.png';
-import scholarGirl from '../assets/ghibli/pixar_scholar_girl_1770353015970.png';
+// NEUTRAL (IDLE is now HAPPY/ENERGETIC)
+import wizardMale from '../assets/ghibli/pixar_wizard_male_happy_idle_1770380276670.png';
+import wizardFemale from '../assets/ghibli/pixar_wizard_female_happy_idle_1770380292752.png';
+import scholarBoy from '../assets/ghibli/pixar_scholar_boy_happy_idle_retry_1770380331389.png';
+import scholarGirl from '../assets/ghibli/pixar_scholar_girl_happy_idle_1770380306559.png';
 
 // WIN (HAPPY)
 import wizardMaleWin from '../assets/ghibli/pixar_wizard_male_win_1770354642306.png';
@@ -28,6 +27,15 @@ const avatars = {
 
 export default function Avatar({ state, type = 'man' }) {
     // state: 'PLAYING', 'WIN', 'LOSE', 'PAUSED'
+    const [idleAnim, setIdleAnim] = useState('avatar-bounce');
+
+    // Randomize idle animation on mount or infrequently to keep it fresh
+    useEffect(() => {
+        if (state === 'PLAYING') {
+            const variant = Math.random() > 0.5 ? 'avatar-bounce' : 'avatar-sway';
+            setIdleAnim(variant);
+        }
+    }, [state]);
 
     const getAvatarSrc = () => {
         const charSet = avatars[type] || avatars['man'];
@@ -44,7 +52,7 @@ export default function Avatar({ state, type = 'man' }) {
             case 'WIN': return 'avatar-win';
             case 'LOSE': return 'avatar-lose';
             case 'PAUSED': return 'avatar-paused';
-            default: return 'avatar-playing';
+            default: return idleAnim;
         }
     };
 
