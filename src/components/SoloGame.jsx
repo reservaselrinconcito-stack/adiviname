@@ -45,7 +45,7 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
         // Try up to 20 times to find a unique challenge
         do {
-            nextChallenge = getChallenge();
+            nextChallenge = getChallenge(lang);
             attempts++;
         } while (seenIds.current.has(nextChallenge.id) && attempts < 20);
 

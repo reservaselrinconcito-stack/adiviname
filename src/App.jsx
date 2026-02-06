@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { riddles } from './data'
 import SoloGame from './components/SoloGame'
 
-import wizardMale from './assets/ghibli/avatar_wizard_male_1770352326452.png';
-import wizardFemale from './assets/ghibli/avatar_wizard_female_1770352340184.png';
-import scholarBoy from './assets/ghibli/avatar_scholar_boy_1770352353298.png';
-import scholarGirl from './assets/ghibli/avatar_scholar_girl_1770352375815.png';
+import wizardMale from './assets/ghibli/pixar_wizard_male_1770352949377.png';
+import wizardFemale from './assets/ghibli/pixar_wizard_female_1770353002544.png';
+import scholarBoy from './assets/ghibli/pixar_scholar_boy_1770352976814.png';
+import scholarGirl from './assets/ghibli/pixar_scholar_girl_1770353015970.png';
 
 function App() {
   const [lang, setLang] = useState('es');
