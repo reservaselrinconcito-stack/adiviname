@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { getChallenge } from '../data'
 import Avatar from './Avatar'
+import { getTranslation } from '../translations'
 
 // Backgrounds
 import bgForest from '../assets/ghibli/bg_forest_1770314298231.png';
@@ -12,20 +13,20 @@ const backgrounds = [bgForest, bgSky, bgVillage, bgMeadow];
 
 export default function SoloGame({ lang, avatarType, onExit, incrementCount, checkLimit }) {
 
+    const t = getTranslation(lang); // Get current language strings
     const [currentChallenge, setCurrentChallenge] = useState(null);
     const [bgIndex, setBgIndex] = useState(0);
 
     // NO REPEAT LOGIC
-    // We store seen IDs in a ref so it persists across renders but resets on unmount (new game)
-    // If the user wants "Every time game starts it is new", unmount/remount does this.
     const seenIds = useRef(new Set());
 
     // Game State
     const [input, setInput] = useState('');
-    const [timeLeft, setTimeLeft] = useState(20);
+    const [timeLeft, setTimeLeft] = useState(30); // INCREASED TO 30s
     const [status, setStatus] = useState('PLAYING');
     const [shake, setShake] = useState(false);
     const [combo, setCombo] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false); // To prevent double clicks during win
 
     const timerRef = useRef(null);
 
@@ -39,17 +40,14 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
             return;
         }
 
-        // --- INFINITE CONTENT GENERATOR WITH UNIQUE GUARD ---
         let nextChallenge;
         let attempts = 0;
 
-        // Try up to 20 times to find a unique challenge
         do {
             nextChallenge = getChallenge(lang);
             attempts++;
         } while (seenIds.current.has(nextChallenge.id) && attempts < 20);
 
-        // Mark as seen
         seenIds.current.add(nextChallenge.id);
 
         setCurrentChallenge(nextChallenge);
@@ -57,8 +55,9 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
 
         setInput('');
         setStatus('PLAYING');
-        setTimeLeft(nextChallenge.time_limit || 20);
+        setTimeLeft(nextChallenge.time_limit || 30); // Default 30s
         setShake(false);
+        setIsTransitioning(false);
     };
 
     // Timer Logic
@@ -91,15 +90,19 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
     };
 
     const handleWin = () => {
+        if (isTransitioning) return;
+        setIsTransitioning(true);
+
         setStatus('WIN');
         setCombo(c => c + 1);
         clearInterval(timerRef.current);
         incrementCount();
         if (navigator.vibrate) navigator.vibrate(50);
 
+        // INSTANT TRANSITION (Reduced wait to 800ms for just a quick "pop" feeling)
         setTimeout(() => {
             loadQuestion();
-        }, 1500);
+        }, 800);
     };
 
     // --- LOGIC ---
@@ -113,7 +116,7 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
     };
 
     const checkOption = (opt) => {
-        if (status !== 'PLAYING') return;
+        if (status !== 'PLAYING' || isTransitioning) return;
 
         if (opt.toString() === currentChallenge.answer.toString()) {
             handleWin();
@@ -130,27 +133,32 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
     if (!currentChallenge) return null;
 
     const currentBg = backgrounds[bgIndex];
-    const progressPct = (timeLeft / 20) * 100;
+    const progressPct = (timeLeft / 30) * 100; // Updated base to 30
 
     return (
         <>
+            {/* ANIMATED BG EFFECT: Scale slightly to allow movement */}
             <div
                 style={{
-                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                    backgroundImage: `url(${currentBg})`, backgroundSize: 'cover', backgroundPosition: 'center',
-                    zIndex: -1, transition: 'background-image 0.5s ease-out'
+                    position: 'fixed', top: -20, left: -20, right: -20, bottom: -20,
+                    backgroundImage: `url(${currentBg})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    zIndex: -1,
+                    transition: 'background-image 0.5s ease-out',
+                    animation: 'bgPan 20s infinite ease-in-out alternate' /* CSS Animation added */
                 }}
             />
 
-            <div className={`card ${status === 'WIN' ? 'pop-in' : ''} ${shake ? 'shake' : ''}`} style={{ padding: '1.5rem 1rem' }}>
+            <div className={`card ${status === 'WIN' ? 'pop-in' : ''} ${shake ? 'shake' : ''}`} style={{ padding: '1.2rem 1rem' }}>
 
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
-                    <button className="icon-btn" onClick={onExit} style={{ background: '#FF4757', color: 'white', border: 'none', width: '35px', height: '35px' }}>✕</button>
+                    <button className="icon-btn" onClick={onExit} style={{ background: '#FF4757', color: 'white', border: 'none', width: '35px', height: '35px', fontSize: '1.2rem' }}>✕</button>
 
                     {combo > 1 && (
                         <div style={{ background: '#ffa502', padding: '0.2rem 0.6rem', borderRadius: '15px', color: 'white', fontWeight: 'bold', fontSize: '0.9rem', transform: 'rotate(-5deg)' }}>
-                            🔥 {combo}
+                            🔥 {t.streak} {combo}
                         </div>
                     )}
 
@@ -160,31 +168,29 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                 </div>
 
                 {/* Progress Bar */}
-                <div className="progress-bar" style={{ height: '10px', marginBottom: '1rem' }}>
+                <div className="progress-bar" style={{ height: '8px', marginBottom: '1rem' }}>
                     <div className="progress-fill" style={{ width: `${progressPct}%`, background: timeLeft < 5 ? '#ff4757' : '#2ed573' }} />
                 </div>
 
                 {status === 'PAUSED' ? (
                     <div style={{ padding: '2rem 0' }}>
-                        <h1>PAUSA</h1>
-                        <button className="btn" onClick={togglePause}>CONTINUAR</button>
+                        <h1>{t.paused}</h1>
+                        <button className="btn" onClick={togglePause}>{t.resume}</button>
                     </div>
                 ) : (
                     <>
+                        {/* Avatar with Animation Class */}
                         <Avatar state={status} type={avatarType} />
 
                         {/* Tags */}
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginBottom: '10px' }}>
                             <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', background: '#dfe4ea', padding: '2px 8px', borderRadius: '10px', color: '#747d8c', fontWeight: 'bold' }}>
-                                {currentChallenge.type}
-                            </span>
-                            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', background: '#ffeaa7', padding: '2px 8px', borderRadius: '10px', color: '#d35400', fontWeight: 'bold' }}>
-                                UNIQ
+                                {t[currentChallenge.type] || currentChallenge.type}
                             </span>
                         </div>
 
                         {/* Question */}
-                        <h2 style={{ fontSize: '1.4rem', marginBottom: '1rem', minHeight: '50px', color: '#2f3542', lineHeight: '1.2' }}>
+                        <h2 style={{ fontSize: '1.4rem', marginBottom: '1rem', minHeight: '60px', color: '#2f3542', lineHeight: '1.2', textAlign: 'center' }}>
                             {currentChallenge.question}
                         </h2>
 
@@ -222,7 +228,7 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                                             setInput(e.target.value);
                                             checkTextAnswer(e.target.value);
                                         }}
-                                        placeholder="Respuesta..."
+                                        placeholder="..."
                                         disabled={status !== 'PLAYING'}
                                         autoComplete="off"
                                         style={{ fontSize: '1.2rem' }}
@@ -231,24 +237,24 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                             </>
                         )}
 
-                        {/* Viral Share */}
+                        {/* Share */}
                         {(status === 'WIN' || status === 'LOSE') && (
                             <button
                                 className="btn shake"
                                 onClick={() => {
-                                    const text = `🧠 Reto: ${currentChallenge.question}\n👉 Juega en Adiviname`;
+                                    const text = status === 'WIN' ? t.share_text_win : t.share_text_lose;
                                     navigator.clipboard.writeText(text);
-                                    alert('¡Copiado!');
+                                    alert(t.copy_success);
                                 }}
                                 style={{ marginTop: '0.5rem', background: '#3742FA', boxShadow: '0 6px 0 #2F35DF', fontSize: '1rem', padding: '0.6rem' }}
                             >
-                                📲 COMPARTIR
+                                {t.share}
                             </button>
                         )}
 
                         {status === 'WIN' && (
                             <div style={{ position: 'absolute', top: '35%', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', zIndex: 100 }}>
-                                <span style={{ fontSize: '5rem', animation: 'pop 0.5s', display: 'block' }}>🎉</span>
+                                <span style={{ fontSize: '5rem', animation: 'pop 0.3s', display: 'block' }}>🎉</span>
                             </div>
                         )}
                     </>
