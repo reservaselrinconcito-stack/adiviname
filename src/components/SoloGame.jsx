@@ -163,6 +163,12 @@ export default function SoloGame({ lang, avatarType, onExit, incrementCount, che
                 }}
             />
 
+            {/* PANIC RED OVERLAY */}
+            <div
+                className={timeLeft < 5 && status === 'PLAYING' ? 'panic-overlay' : ''}
+                style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: -1 }}
+            />
+
             <div className={`card ${status === 'WIN' ? 'pop-in' : ''} ${shake ? 'shake' : ''}`} style={{ padding: '1.2rem 1rem' }}>
 
                 {/* Header */}

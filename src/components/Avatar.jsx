@@ -1,20 +1,41 @@
+import { motion } from 'framer-motion'
 import React from 'react';
 
+// NEUTRAL (IDLE)
 import wizardMale from '../assets/ghibli/pixar_wizard_male_1770352949377.png';
 import wizardFemale from '../assets/ghibli/pixar_wizard_female_1770353002544.png';
 import scholarBoy from '../assets/ghibli/pixar_scholar_boy_1770352976814.png';
 import scholarGirl from '../assets/ghibli/pixar_scholar_girl_1770353015970.png';
 
+// WIN (HAPPY)
+import wizardMaleWin from '../assets/ghibli/pixar_wizard_male_win_1770354642306.png';
+import wizardFemaleWin from '../assets/ghibli/pixar_wizard_female_win_1770354669432.png';
+import scholarBoyWin from '../assets/ghibli/pixar_scholar_boy_win_1770354697457.png';
+import scholarGirlWin from '../assets/ghibli/pixar_scholar_girl_win_1770354727024.png';
+
+// LOSE (SAD)
+import wizardMaleLose from '../assets/ghibli/pixar_wizard_male_lose_1770354655595.png';
+import wizardFemaleLose from '../assets/ghibli/pixar_wizard_female_lose_1770354682656.png';
+import scholarBoyLose from '../assets/ghibli/pixar_scholar_boy_lose_1770354712160.png';
+import scholarGirlLose from '../assets/ghibli/pixar_scholar_girl_lose_1770354741732.png';
+
+const avatars = {
+    man: { idle: wizardMale, win: wizardMaleWin, lose: wizardMaleLose },
+    woman: { idle: wizardFemale, win: wizardFemaleWin, lose: wizardFemaleLose },
+    boy: { idle: scholarBoy, win: scholarBoyWin, lose: scholarBoyLose },
+    girl: { idle: scholarGirl, win: scholarGirlWin, lose: scholarGirlLose }
+};
+
 export default function Avatar({ state, type = 'man' }) {
     // state: 'PLAYING', 'WIN', 'LOSE', 'PAUSED'
-    // type: 'man', 'woman', 'boy', 'girl' (Maps to Wizards/Scholars)
 
     const getAvatarSrc = () => {
-        switch (type) {
-            case 'woman': return wizardFemale;
-            case 'boy': return scholarBoy;
-            case 'girl': return scholarGirl;
-            default: return wizardMale;
+        const charSet = avatars[type] || avatars['man'];
+
+        switch (state) {
+            case 'WIN': return charSet.win;
+            case 'LOSE': return charSet.lose;
+            default: return charSet.idle;
         }
     };
 
@@ -28,7 +49,7 @@ export default function Avatar({ state, type = 'man' }) {
     };
 
     return (
-        <div className={`avatar-container ${getAnimationClass()}`} style={{ width: '180px', height: '180px', margin: '0 auto 1.5rem', position: 'relative' }}>
+        <div className={`avatar-container ${getAnimationClass()}`} style={{ width: '220px', height: '220px', margin: '0 auto 1rem', position: 'relative' }}>
             <img
                 src={getAvatarSrc()}
                 alt="Avatar"
@@ -36,14 +57,13 @@ export default function Avatar({ state, type = 'man' }) {
                     width: '100%',
                     height: '100%',
                     objectFit: 'contain',
-                    borderRadius: '50%',
-                    border: '4px solid white',
-                    boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
-                    background: 'white'
+                    filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.3))', // Stronger shadow for 3D depth
+                    transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                 }}
             />
-            {state === 'WIN' && <div style={{ position: 'absolute', top: -10, right: -10, fontSize: '3rem', animation: 'bounce 0.5s infinite alternate' }}>✨</div>}
-            {state === 'LOSE' && <div style={{ position: 'absolute', top: -10, right: -10, fontSize: '3rem' }}>💧</div>}
+            {state === 'WIN' && (
+                <div style={{ position: 'absolute', inset: -50, pointerEvents: 'none', background: 'radial-gradient(circle, rgba(255,255,0,0.4) 0%, transparent 70%)', animation: 'pulse 1s infinite', zIndex: -1 }} />
+            )}
         </div>
     );
 }
